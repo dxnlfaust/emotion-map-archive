@@ -244,15 +244,19 @@ function animate() {
 
 
 function onClick(event) {
+  // Ignore if already showing a video
   if (videoOverlay) return;
 
+  // Check if dragged
   const dx = event.clientX - mouseDownPos.x;
   const dy = event.clientY - mouseDownPos.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
-  if (distance > dragThreshold) return;
+  if (distance > dragThreshold) return; // It was a drag
 
+  // Proceed with raycasting...
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
   raycaster.setFromCamera(mouse, camera);
 
   for (let s = 0; s < spheres.length; s++) {
@@ -264,16 +268,13 @@ function onClick(event) {
       selectedPoint = intersect.point.clone();
       const bufferIndex = intersect.index;
 
-      const nearestScreenCoords = getNearestScreenPositions(points.geometry, bufferIndex, 3);
-
       pauseAnimation();
       zoomToPoint(selectedPoint);
-      showVideoOverlay(bufferIndex, event.clientX, event.clientY, true, nearestScreenCoords);
+      showVideoOverlay(bufferIndex, event.clientX, event.clientY);
       break;
     }
   }
 }
-
 
 
 function onWindowResize() {
@@ -314,7 +315,7 @@ function zoomToPoint(point) {
   zoomProgress = 0;
 }
 
-function showVideoOverlay(index, x, y, resetCamera = true, originPositions = []) {
+function showVideoOverlay(index, x, y, resetCamera = true) {
   if (resetCamera) {
     pauseAnimation();
     zoomToPoint(selectedPoint);
@@ -365,12 +366,9 @@ function showVideoOverlay(index, x, y, resetCamera = true, originPositions = [])
       const smallDiv = document.createElement('div');
       const scale = 0.25 + Math.random() * 0.25;
 
-      const startX = originPositions[idx - 1]?.x || window.innerWidth / 2;
-      const startY = originPositions[idx - 1]?.y || window.innerHeight / 2;
-
       smallDiv.style.position = 'absolute';
-      smallDiv.style.left = `${startX}px`;
-      smallDiv.style.top = `${startY}px`;
+      smallDiv.style.left = '50vw';
+      smallDiv.style.top = '50vh';
       smallDiv.style.zIndex = 999;
       smallDiv.style.opacity = 0;
       smallDiv.style.transform = 'scale(0)';
@@ -403,6 +401,9 @@ function showVideoOverlay(index, x, y, resetCamera = true, originPositions = [])
         x: (Math.random() - 0.5) * 0.5,
         y: (Math.random() - 0.5) * 0.5
       };
+
+      const startX = Math.random() * window.innerWidth;
+      const startY = Math.random() * window.innerHeight;
 
       smallDiv.style.left = `${startX}px`;
       smallDiv.style.top = `${startY}px`;
@@ -455,36 +456,4 @@ function resumeAnimation() {
 
 function easeOutCubic(t) {
   return 1 - Math.pow(1 - t, 3);
-}
-
-function getNearestScreenPositions(geometry, targetIndex, count = 3) {
-  const positions = geometry.attributes.position;
-  const target = new THREE.Vector3(
-    positions.getX(targetIndex),
-    positions.getY(targetIndex),
-    positions.getZ(targetIndex)
-  );
-
-  const distances = [];
-
-  for (let i = 0; i < positions.count; i++) {
-    if (i === targetIndex) continue;
-    const point = new THREE.Vector3(
-      positions.getX(i),
-      positions.getY(i),
-      positions.getZ(i)
-    );
-    const dist = target.distanceToSquared(point);
-    distances.push({ index: i, position: point, dist });
-  }
-
-  distances.sort((a, b) => a.dist - b.dist);
-
-  return distances.slice(0, count).map(({ position }) => {
-    const screen = position.clone().project(camera);
-    return {
-      x: (screen.x * 0.5 + 0.5) * window.innerWidth,
-      y: (-screen.y * 0.5 + 0.5) * window.innerHeight
-    };
-  });
 }
