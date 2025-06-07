@@ -1,0 +1,14 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# system files
+.DS_Store
+
+# Vite cache
+.vite/
+
+# logs
+npm-debug.log*
