@@ -51,7 +51,7 @@ function init() {
   const renderScene = new RenderPass(scene, camera);
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    2, // strength
+    1, // strength
     0.01, // radius
     0 // threshold
   );
@@ -255,23 +255,47 @@ function onClick(event) {
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
+  let closestIntersect = null;
+  let closestData = null;
+
   for (let s = 0; s < spheres.length; s++) {
     const { points } = spheres[s];
     const intersects = raycaster.intersectObject(points);
-
+    
     if (intersects.length > 0) {
       const intersect = intersects[0];
-      selectedPoint = intersect.point.clone();
-      const bufferIndex = intersect.index;
-
-      const nearestScreenCoords = getNearestScreenPositions(points.geometry, bufferIndex, 3);
-
-      pauseAnimation();
-      zoomToPoint(selectedPoint);
-      showVideoOverlay(bufferIndex, event.clientX, event.clientY, true, nearestScreenCoords);
-      break;
+      if (!closestIntersect || intersect.distance < closestIntersect.distance) {
+        closestIntersect = intersect;
+        closestData = {
+          points,
+          sphereIndex: s,
+          bufferIndex: intersect.index,
+          pointColor: points.material.color.clone()
+        };
+      }
     }
   }
+
+  if (closestData) {
+    selectedPoint = closestIntersect.point.clone();
+    const nearestScreenCoords = getNearestScreenPositions(
+      closestData.points.geometry,
+      closestData.bufferIndex,
+      3
+    );
+
+    pauseAnimation();
+    zoomToPoint(selectedPoint);
+    showVideoOverlay(
+      closestData.bufferIndex,
+      event.clientX,
+      event.clientY,
+      true,
+      nearestScreenCoords,
+      closestData.pointColor
+    );
+  }
+
 }
 
 
@@ -314,7 +338,7 @@ function zoomToPoint(point) {
   zoomProgress = 0;
 }
 
-function showVideoOverlay(index, x, y, resetCamera = true, originPositions = []) {
+function showVideoOverlay(index, x, y, resetCamera = true, originPositions = [], pointColor = new THREE.Color(1, 1, 1)) {
   if (resetCamera) {
     pauseAnimation();
     zoomToPoint(selectedPoint);
@@ -407,20 +431,102 @@ function showVideoOverlay(index, x, y, resetCamera = true, originPositions = [])
       smallDiv.style.left = `${startX}px`;
       smallDiv.style.top = `${startY}px`;
 
-      orbitingVideos.push({
-        element: smallDiv,
-        x: startX,
-        y: startY,
-        vx: velocity.x,
-        vy: velocity.y
-      });
-    });
+  orbitingVideos.push({
+    element: smallDiv,
+    x: startX,
+    y: startY,
+    vx: velocity.x,
+    vy: velocity.y
+  });
+
+  createFloatingDotWithLine(thumb, pointColor); 
+});
+
 
 
   // Delay adding outside click listener to avoid immediate dismissal
   setTimeout(() => {
     window.addEventListener('click', closeVideoOverlayOnce);
   }, 100);
+
+  function createFloatingDotWithLine(targetVideoElement) {
+    const dot = document.createElement('div');
+    dot.className = 'floating-dot';
+
+    // Random size: base 10px ± 30%
+    const scale = 0.9 + Math.random() * 8;
+    dot.style.width = `${10 * scale}px`;
+    dot.style.height = `${10 * scale}px`;
+    dot.dataset.scale = scale; // store scale for later use in line centering
+
+    document.body.appendChild(dot);
+
+    // Position dot randomly on screen
+    let x = Math.random() * window.innerWidth;
+    let y = Math.random() * window.innerHeight;
+    dot.style.left = `${x}px`;
+    dot.style.top = `${y}px`;
+
+    const colorStr = `rgb(${Math.floor(pointColor.r * 255)}, ${Math.floor(pointColor.g * 255)}, ${Math.floor(pointColor.b * 255)})`;
+
+    dot.style.background = `radial-gradient(circle,  rgba(255,255,255,1) 13%, ${colorStr} 48%, rgba(255,255,255,0.2) 60%, transparent 100%)`;
+    dot.style.boxShadow = `0 0 10px ${colorStr}`;
+
+
+    document.body.appendChild(dot);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      dot.style.transform = 'scale(1)';
+    });
+
+
+    // Drift values
+    let vx = (Math.random() - 0.5) * 0.5;
+    let vy = (Math.random() - 0.5) * 0.5;
+
+    // Line
+    const line = document.createElement('div');
+    line.className = 'dot-line';
+    document.body.appendChild(line);
+
+    function animate() {
+      x += vx;
+      y += vy;
+
+      if (x < 0 || x > window.innerWidth) vx *= -1;
+      if (y < 0 || y > window.innerHeight) vy *= -1;
+
+      dot.style.left = `${x}px`;
+      dot.style.top = `${y}px`;
+
+      // Draw line to center of video
+const dotRect = dot.getBoundingClientRect();
+const dotX = dotRect.left + dotRect.width / 2;
+const dotY = dotRect.top + dotRect.height / 2;
+
+const videoRect = targetVideoElement.getBoundingClientRect();
+const videoX = videoRect.left + videoRect.width / 2;
+const videoY = videoRect.top + videoRect.height / 2;
+
+const dx = videoX - dotX;
+const dy = videoY - dotY;
+const length = Math.sqrt(dx * dx + dy * dy);
+const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+line.style.width = `${length}px`;
+line.style.left = `${dotX}px`;
+line.style.top = `${dotY}px`;
+line.style.transform = `rotate(${angle}deg)`;
+
+
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  }
+  createFloatingDotWithLine(video, pointColor); // main video
 }
 
 
@@ -449,7 +555,19 @@ function resumeAnimation() {
   secondaryOverlays.forEach(el => el.remove());
   secondaryOverlays = [];
   orbitingVideos = [];
+
+  document.querySelectorAll('.floating-dot, .dot-line').forEach(el => {
+    el.style.transition = 'transform 0.4s ease, opacity 0.3s ease';
+    el.style.transform = 'scale(0)';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300); // Wait for animation
+  });
+
+
+  // 🔥 Clean up floating dots and lines
+  document.querySelectorAll('.floating-dot, .dot-line').forEach(el => el.remove());
 }
+
 
 
 

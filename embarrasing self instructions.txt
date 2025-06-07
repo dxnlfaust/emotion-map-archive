@@ -1,0 +1,9 @@
+Ok
+
+npm build
+
+then copy the dist folder into the root, delete dist folder
+
+THEN in index, change the script to
+	<script type="module" crossorigin src="./assets/index-XYZ.js"></script>
+push it to git
