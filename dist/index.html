@@ -6,10 +6,50 @@
     <style>
       body { margin: 0; overflow: hidden; background: #111; }
       canvas { display: block; }
+      video {
+        mask-image:
+          linear-gradient(to top, transparent, black 10%, black 40%, transparent),
+          linear-gradient(to left, transparent, black 10%, black 40%, transparent),
+          radial-gradient(ellipse at center, black 60%, transparent 80%);
+        -webkit-mask-image:
+          linear-gradient(to top, transparent, black 10%, black 90%, transparent),
+          linear-gradient(to left, transparent, black 10%, black 90%, transparent),
+          radial-gradient(ellipse at center, black 60%, transparent 100%);
+
+        mask-composite: intersect;
+        -webkit-mask-composite: destination-in;
+        mask-repeat: no-repeat;
+        mask-size: 100% 100%;
+        mask-position: center;
+      }
+
+      .floating-dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 999;
+        transform: scale(0);
+        transition: transform 0.4s ease, opacity 0.3s ease;
+      }
+
+      .dot-line {
+        position: absolute;
+        height: 2px;
+        opacity: 0.3;
+        background-color: white;
+        transform-origin: left center;
+        pointer-events: none;
+        z-index: 998;
+      }
     </style>
-    <script type="module" crossorigin src="./assets/index-DMbrtRyP.js"></script>
-  </head>
+
+  <script type="module" crossorigin src="./assets/index-CIPL-rIx.js"></script>
+</head>
   <body>
-    <canvas id="maincanvas"></canvas>
+    <canvas id="maincanvas"></canvas>
+
   </body>
 </html>
+6

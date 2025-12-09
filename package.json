@@ -1,22 +1,50 @@
 {
-  "name": "conceptcloud",
+  "name": "emotion-map-archive",
   "version": "1.0.0",
-  "main": "index.js",
-  "description": "",
-  "keywords": [],
+  "description": "Emotion mapping archive - Three.js/WebGL visualization",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac --win",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win"
+  },
+  "keywords": ["electron", "three.js", "visualization"],
   "author": "",
   "license": "ISC",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "deploy": "gh-pages -d dist"
-  },
-  "dependencies": {
-    "three": "^0.177.0"
-  },
   "devDependencies": {
-    "gh-pages": "^6.3.0",
-    "vite": "^6.3.5"
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.emotionmap.archive",
+    "productName": "Emotion Map Archive",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "dist/assets/icon.icns"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "dist/assets/icon.ico"
+    }
   }
 }
